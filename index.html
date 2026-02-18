@@ -456,6 +456,19 @@ let current = 0;
 let score = 0;
 let answered = false;
 
+// Загрузка сохраненного прогресса
+let saved = JSON.parse(localStorage.getItem('quiz'));
+if (saved) {
+  current = saved.current;
+  score = saved.score;
+  answered = saved.answered;
+}
+
+// Функция сохранения
+function saveQuiz() {
+  localStorage.setItem('quiz', JSON.stringify({current, score, answered}));
+}
+
 function renderQuestion() {
   const q = questions[current];
   answered = false;
@@ -530,6 +543,7 @@ function selectAnswer(chosen) {
     btn.textContent = 'Завершить тест →';
     btn.className = 'btn-next show';
   }
+  saveQuiz();
 }
 
 function nextQuestion() {
@@ -543,6 +557,7 @@ function nextQuestion() {
       renderQuestion();
     }, 10);
   }
+  saveQuiz();
 }
 
 function showResult() {
@@ -565,6 +580,7 @@ function showResult() {
 }
 
 function restartQuiz() {
+  localStorage.removeItem('quiz');
   current = 0; score = 0;
   document.getElementById('result-screen').className = 'result-screen';
   document.getElementById('quiz-area').style.display = 'block';
