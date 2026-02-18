@@ -160,6 +160,13 @@ color: var(--wrong);
 opacity: 0.35;
 }
 
+.option.selected {
+  background: var(--accent);
+  border-color: var(--accent2);
+  color: white;
+  transform: translateX(4px);
+}
+
 /* FEEDBACK */
 .feedback {
 margin-top: 16px;
@@ -289,12 +296,15 @@ transition: opacity 0.2s;
       <div class="q-text" id="q-text"></div>
       <div class="options" id="options"></div>
       <div class="feedback" id="feedback">
-        <span class="feedback-icon" id="feedback-icon"></span>
-        <span id="feedback-text"></span>
-      </div>
-      <button class="btn-next" id="btn-next" onclick="nextQuestion()">
-        Следующий вопрос →
-      </button>
+  <span class="feedback-icon" id="feedback-icon"></span>
+  <span id="feedback-text"></span>
+</div>
+<button class="btn-submit-multi" id="btn-submit-multi" onclick="submitMulti()" style="display: none; margin-top: 20px; width: 100%; padding: 16px; background: linear-gradient(135deg, var(--accent2), #06d6a0); border: none; border-radius: 10px; color: #fff; font-family: 'Unbounded', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; letter-spacing: 0.05em;">
+  Подтвердить выбор →
+</button>
+<button class="btn-next" id="btn-next" onclick="nextQuestion()">
+  Следующий вопрос →
+</button>
     </div>
   </div>
 
@@ -331,7 +341,7 @@ const questions = [
   // КОМПЕТЕНЦИЯ УК-1.2 (вопросы 14-25)
   { q: "14. Какая последовательность этапов наиболее соответствует жизненному циклу анализа данных?", opts: ["Сбор → Анализ → Визуализация → Очистка", "Сбор → Подготовка и очистка → Анализ → Интерпретация", "Формулирование гипотезы → Построение модели → Сбор данных", "Сбор → Формулирование выводов → Подготовка данных"], ans: 1 },
   { q: "15. Установите последовательность первичной обработки данных: 1) Очистка данных, 2) Удаление дубликатов, 3) Анализ пропусков, 4) Проверка типов данных, 5) Финальная проверка качества.", opts: ["1→2→3→4→5", "4→3→2→1→5", "3→4→2→1→5", "2→3→4→1→5"], ans: 1 },
-  { q: "16. Установите последовательность этапов жизненного цикла аналитического проекта.", opts: ["а→б→в→г→д", "а→б→д→в→г", "б→а→в→г→д", "в→б→а→г→д"], ans: 1 },
+{ q: "16. Установите последовательность этапов: а) постановка цели и KPI, б) сбор и консолидация данных, в) анализ и построение моделей, г) интерпретация и выводы, д) подготовка и очистка данных.", opts: ["а→б→в→г→д", "а→б→д→в→г", "б→а→в→г→д", "в→б→а→г→д"], ans: 1 },
   { q: "17а. Для какой задачи лучше всего подходит гистограмма (Histogram)?", opts: ["Сравнение величин по категориям", "Анализ распределения непрерывного числового признака", "Исследование взаимосвязи двух переменных", "Отображение динамики во времени"], ans: 1 },
   { q: "17б. Для какой задачи лучше всего подходит столбчатая диаграмма (Bar Chart)?", opts: ["Сравнение величин по дискретным категориям", "Анализ распределения числового признака", "Исследование взаимосвязи двух переменных", "Отображение динамики во времени"], ans: 0 },
   { q: "17в. Для какой задачи лучше всего подходит линейный график (Line Chart)?", opts: ["Сравнение величин по категориям", "Анализ распределения", "Исследование взаимосвязи двух переменных", "Отображение динамики показателя во времени"], ans: 3 },
@@ -376,11 +386,10 @@ const questions = [
   { q: "42. Что использовать для аналитической витрины с контролем доступа?", opts: ["Excel на сетевом диске", "CSV в облаке", "Серверную СУБД", "Хранение в BI"], ans: 2 },
   { q: "43. При политике импортозамещения что нужно проверить?", opts: ["Наличие в реестре РФ", "Количество графиков", "Место в рейтингах", "Личные предпочтения"], ans: 0 },
   { q: "44. Какие критерии ключевые для крупного предприятия? (Выберите все верные)", opts: ["Интеграция", "TCO", "Безопасность и RBAC", "Эстетика UI", "Масштабируемость"], ans: 0, multi: [0,1,2,4] },
-  { q: "45. Установите последовательность этапов выбора BI: 1) Анализ рынка, 2) Формулирование требований, 3) Пилот, 4) Решение.", opts: ["1→2→3→4", "2→1→3→4", "3→2→1→4", "2→3→1→4"], ans: 1 },
-  { q: "46. Для конфиденциальных данных предпочтительный вариант развёртывания?", opts: ["Облачное решение", "Локальное решение"], ans: 1 },
-  { q: "47. Установите последовательность этапов методологии выбора BI.", opts: ["1→2→3→4", "2→1→3→4", "3→2→1→4", "2→3→1→4"], ans: 1 },
-  { q: "48. Соотнесите сценарий и вариант развёртывания: 1) Гибкость, 2) Конфиденциальность, 3) Нет DevOps.", opts: ["1-облако, 2-on-premise, 3-облако", "1-on-premise, 2-облако, 3-on-premise", "1-облако, 2-облако, 3-on-premise", "1-on-premise, 2-on-premise, 3-облако"], ans: 0 },
-
+{ q: "45. Установите последовательность этапов выбора и внедрения BI-платформы: а) пилотное внедрение; б) формулирование требований; в) принятие решения и планирование; г) анализ рынка и оценка решений.", opts: ["б→г→а→в", "а→б→в→г", "г→б→а→в", "б→а→г→в"], ans: 0 },
+  { q: "46. Установите соответствие между бизнес-сценарием и вариантом развёртывания: 1) Организации нужна гибкость и масштабирование в условиях неопределённости; 2) Компания работает с конфиденциальными данными, запрещёнными к передаче вовне; 3) В организации отсутствует DevOps-команда для сопровождения.", opts: ["1-облако, 2-on-premise, 3-облако", "1-on-premise, 2-облако, 3-on-premise", "1-облако, 2-облако, 3-on-premise", "1-on-premise, 2-on-premise, 3-облако"], ans: 0 },
+  { q: "47. При выборе аналитической платформы в корпоративной среде применяется принцип рационального выбора технологий. Какой подход наиболее точно отражает суть этого принципа?", opts: ["Следование рыночным трендам без учёта специфики бизнеса", "Оптимизация по одному критерию (скорость или стоимость)", "Комплексная оценка соответствия требованиям с подтверждением на пилоте", "Максимизация технической сложности для демонстрации экспертизы"], ans: 2 },
+   {q: "48. Отдел аналитики получил запрос: разработать дашборд по продажам из Excel и SQL с ежедневным обновлением и разграничением доступа. Какой первый шаг наиболее корректен?", opts: ["Сразу проектировать визуальный интерфейс", "Провести формализацию требований с заказчиком", "Написать скрипт для объединения данных", "Вручную объединять данные в Excel"], ans: 1 },
   // КОМПЕТЕНЦИЯ ОПК-2.3 (вопросы 49-60)
   { q: "49. Установите последовательность проектирования дашборда: 1) Анализ потребностей, 2) KPI, 3) Логическая модель, 4) Интерфейс, 5) Прототип.", opts: ["1→2→4→3→5", "1→2→3→4→5", "2→1→3→4→5", "3→1→2→4→5"], ans: 1 },
   { q: "50. Что означает «публикация дашборда» в корпоративной среде?", opts: ["Вывод на печать", "Размещение без прав доступа", "Развёртывание с настройкой ролей и расписания", "Сохранение на локальном ПК"], ans: 2 },
@@ -455,6 +464,8 @@ const questions = [
 let current = 0;
 let score = 0;
 let answered = false;
+let selectedMulti = []; // для хранения выбранных вариантов
+let isMulti = false; // флаг мультивыбора
 
 // Загрузка сохраненного прогресса
 let saved = JSON.parse(localStorage.getItem('quiz'));
@@ -472,16 +483,21 @@ function saveQuiz() {
 function renderQuestion() {
   const q = questions[current];
   answered = false;
+  selectedMulti = [];
+  isMulti = Array.isArray(q.multi);
 
   document.getElementById('q-number').textContent = `ВОПРОС ${String(current+1).padStart(2,'0')}`;
   document.getElementById('q-text').textContent = q.q;
   document.getElementById('progress-label').textContent = `Вопрос ${current+1} из ${questions.length}`;
   document.getElementById('score-label').textContent = `✓ ${score}`;
-  document.getElementById('progress-fill').style.width = `${((current) / questions.length) * 100}%`;
+  document.getElementById('progress-fill').style.width = `${(current / questions.length) * 100}%`;
 
   const feedback = document.getElementById('feedback');
   feedback.className = 'feedback';
-  document.getElementById('btn-next').className = 'btn-next';
+  
+  const btnNext = document.getElementById('btn-next');
+  btnNext.className = 'btn-next';
+  btnNext.textContent = current < questions.length - 1 ? 'Следующий вопрос →' : 'Завершить тест →';
 
   const optionsEl = document.getElementById('options');
   optionsEl.innerHTML = '';
@@ -490,59 +506,107 @@ function renderQuestion() {
     const btn = document.createElement('button');
     btn.className = 'option';
     btn.textContent = opt;
-    btn.onclick = () => selectAnswer(i);
+    btn.onclick = isMulti ? () => toggleMulti(i) : () => selectAnswer(i);
     optionsEl.appendChild(btn);
   });
+// Показываем нужную кнопку (добавьте этот код в конец renderQuestion)
+const submitBtn = document.getElementById('btn-submit-multi');
+const nextBtn = document.getElementById('btn-next');
+
+if (isMulti && !answered) {
+  // Для мультивыбора пока неподтверждённого
+  submitBtn.style.display = 'block';
+  nextBtn.style.display = 'none';
+} else if (isMulti && answered) {
+  // Для мультивыбора уже отвеченного
+  submitBtn.style.display = 'none';
+  nextBtn.style.display = 'block';
+} else {
+  // Для обычных вопросов
+  submitBtn.style.display = 'none';
+  nextBtn.style.display = 'block';
+}
+}
+
+// Переключение выбора для мультивыбора
+function toggleMulti(index) {
+  if (answered) return;
+  const btn = document.querySelectorAll('.option')[index];
+  btn.classList.toggle('selected');
+  
+  if (selectedMulti.includes(index)) {
+    selectedMulti = selectedMulti.filter(i => i !== index);
+  } else {
+    selectedMulti.push(index);
+  }
+}
+
+// Отправка мультивыбора
+function submitMulti() {
+  if (answered || !isMulti) return;
+  
+  const q = questions[current];
+  const opts = document.querySelectorAll('.option');
+  const correctMulti = q.multi.sort();
+  const userMulti = selectedMulti.sort();
+  
+  const isCorrect = JSON.stringify(correctMulti) === JSON.stringify(userMulti);
+  
+  opts.forEach(o => o.disabled = true);
+  
+  if (isCorrect) {
+    score++;
+    correctMulti.forEach(i => opts[i].classList.add('correct'));
+    showFeedback('correct', 'Правильно!');
+  } else {
+    selectedMulti.forEach(i => opts[i].classList.add('wrong'));
+    correctMulti.forEach(i => opts[i].classList.add('correct'));
+    showFeedback('wrong', `Правильные ответы: ${correctMulti.map(i => q.opts[i]).join(', ')}`);
+  }
+  
+  answered = true;
+  document.getElementById('score-label').textContent = `✓ ${score}`;
+  
+  // Скрыть кнопку подтверждения
+  document.getElementById('btn-submit-multi').style.display = 'none';
+  
+  // Показать кнопку следующего вопроса
+  const nextBtn = document.getElementById('btn-next');
+  nextBtn.style.display = 'block';
+  nextBtn.classList.add('show');
+}
+
+// Показ подсказки
+function showFeedback(type, message) {
+  const fb = document.getElementById('feedback');
+  fb.className = `feedback ${type}-fb show`;
+  document.getElementById('feedback-icon').textContent = type === 'correct' ? '✓' : '✗';
+  document.getElementById('feedback-text').textContent = message;
 }
 
 function selectAnswer(chosen) {
   if (answered) return;
-  answered = true;
-
+  
   const q = questions[current];
   const opts = document.querySelectorAll('.option');
-  const feedback = document.getElementById('feedback');
-  const icon = document.getElementById('feedback-icon');
-  const text = document.getElementById('feedback-text');
-  const btn = document.getElementById('btn-next');
-
+  
   opts.forEach(o => o.disabled = true);
-
-  let isCorrect = false;
-  let correctAnswerText = '';
-
-  if (Array.isArray(q.multi)) {
-    isCorrect = (chosen === q.multi[0]);
-    correctAnswerText = q.opts[q.multi[0]];
-  } else {
-    isCorrect = (chosen === q.ans);
-    correctAnswerText = q.opts[q.ans];
-  }
-
+  
+  const isCorrect = chosen === q.ans;
+  
   if (isCorrect) {
     score++;
     opts[chosen].classList.add('correct');
-    feedback.className = 'feedback correct-fb show';
-    icon.textContent = '✓';
-    text.textContent = 'Правильно!';
+    showFeedback('correct', 'Правильно!');
   } else {
     opts[chosen].classList.add('wrong');
-    let correctIndex = Array.isArray(q.multi) ? q.multi[0] : q.ans;
-    opts[correctIndex].classList.add('correct');
-    opts.forEach((o, i) => { if (i !== chosen && i !== correctIndex) o.classList.add('disabled-grey'); });
-    feedback.className = 'feedback wrong-fb show';
-    icon.textContent = '✗';
-    text.textContent = `Неверно. Правильный ответ: ${correctAnswerText}`;
+    opts[q.ans].classList.add('correct');
+    showFeedback('wrong', `Правильный ответ: ${q.opts[q.ans]}`);
   }
-
+  
+  answered = true;
   document.getElementById('score-label').textContent = `✓ ${score}`;
-
-  if (current < questions.length - 1) {
-    btn.className = 'btn-next show';
-  } else {
-    btn.textContent = 'Завершить тест →';
-    btn.className = 'btn-next show';
-  }
+  document.getElementById('btn-next').classList.add('show');
   saveQuiz();
 }
 
