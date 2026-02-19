@@ -279,7 +279,7 @@ transition: opacity 0.2s;
 <div class="container">
   <header>
     <h1>АНАЛИЗ И ВИЗУАЛИЗАЦИЯ ДАННЫХ</h1>
-    <p>Тест</p>
+    <p>Тест · 109 вопросов · Мгновенная проверка ответов</p>
   </header>
 
   <div id="quiz-area">
@@ -287,7 +287,7 @@ transition: opacity 0.2s;
       <div class="progress-bar-fill" id="progress-fill" style="width:0%"></div>
     </div>
     <div class="progress-text">
-      <span id="progress-label">Вопрос 1 из 109</span>
+      <span id="progress-label">Вопрос 1 из 90</span>
       <span class="score-live" id="score-label">✓ 0</span>
     </div>
 
@@ -320,7 +320,7 @@ transition: opacity 0.2s;
 
 <script>
 const questions = [
-  // КОМПЕТЕНЦИЯ УК-1.1 (вопросы 1-13)
+ // КОМПЕТЕНЦИЯ УК-1.1 (вопросы 1-13)
   { q: "1. Что является первым шагом в методике сбора информации для аналитической задачи?", opts: ["Построение графиков и дашборда", "Определение цели исследования и формулировка вопроса (что и зачем измеряем)", "Обучение модели на исторических данных", "Автоматическая очистка пропусков"], ans: 1 },
   { q: "2. Что в методологии анализа данных принято считать данными в их исходном, базовом понимании?", opts: ["Готовые аналитические отчёты и интерпретации", "Набор значений, измерений или записей, фиксирующих характеристики объектов, событий или процессов", "Визуальные представления информации: графики, диаграммы", "Информацию из публичных источников"], ans: 1 },
   { q: "3. Какие элементы обязательно входят в план сбора данных? (Выберите все верные)", opts: ["Определение целевой аудитории/объекта наблюдения", "Описание источников данных и способа получения", "Правила проверки качества", "Выбор цветовой схемы визуализаций", "Описание периода наблюдения и частоты обновления"], ans: 0, multi: [0,1,2,4] },
@@ -538,24 +538,33 @@ const questions = [
   { q: "109. Этичное исследование? (Выберите все верные)", opts: ["Прозрачное документирование", "Скрытие неудобных результатов", "Учёт побочных эффектов", "Использование данных по назначению", "Преувеличение значимости"], ans: 0, multi: [0,2,3] }
 ];
 
-
-let current = 0;
+let answeredQuestions = {}; // { index: { chosen, correct, isCorrect } }
 let score = 0;
+let current = 0;
 let answered = false;
-let selectedMulti = []; // для хранения выбранных вариантов
-let isMulti = false; // флаг мультивыбора
+let selectedMulti = [];
+let isMulti = false;
+let userAnswers = [];
+let userAnswersDetails = [];
 
-// Загрузка сохраненного прогресса
-let saved = JSON.parse(localStorage.getItem('quiz'));
-if (saved) {
-  current = saved.current;
-  score = saved.score;
-  answered = saved.answered;
-}
+// Загружаем сохранённый прогресс
+(function loadProgress() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem('quizProgress'));
+    if (saved) {
+      answeredQuestions = saved.answeredQuestions || {};
+      score = saved.score || 0;
+      current = saved.current || 0;
+    }
+  } catch(e) {}
+})();
 
-// Функция сохранения
 function saveQuiz() {
-  localStorage.setItem('quiz', JSON.stringify({current, score, answered}));
+  try {
+    sessionStorage.setItem('quizProgress', JSON.stringify({
+      answeredQuestions, score, current
+    }));
+  } catch(e) {}
 }
 
 function renderQuestion() {
@@ -565,10 +574,12 @@ function renderQuestion() {
   isMulti = Array.isArray(q.multi);
 
   document.getElementById('q-number').textContent = `ВОПРОС ${String(current+1).padStart(2,'0')}`;
-  document.getElementById('q-text').textContent = q.q;
+  document.getElementById('q-text').innerHTML = q.q.replace(/\n/g, '<br>');
   document.getElementById('progress-label').textContent = `Вопрос ${current+1} из ${questions.length}`;
   document.getElementById('score-label').textContent = `✓ ${score}`;
   document.getElementById('progress-fill').style.width = `${(current / questions.length) * 100}%`;
+  const navEl = document.getElementById('navInput');
+  if (navEl) navEl.value = current + 1;
 
   const feedback = document.getElementById('feedback');
   feedback.className = 'feedback';
@@ -587,6 +598,49 @@ function renderQuestion() {
     btn.onclick = isMulti ? () => toggleMulti(i) : () => selectAnswer(i);
     optionsEl.appendChild(btn);
   });
+
+  // Если уже отвечали — восстановить и заблокировать
+if (answeredQuestions[current] !== undefined) {
+  answered = true;
+  const prev = answeredQuestions[current];
+  const opts = document.querySelectorAll('.option');
+  opts.forEach(o => { o.disabled = true; });
+  
+  if (prev.type === 'multi') {
+    // Для мультивыбора
+    if (prev.isCorrect) {
+      prev.correct.forEach(i => opts[i].classList.add('correct'));
+      const fb = document.getElementById('feedback');
+      fb.className = 'feedback correct-fb show';
+      document.getElementById('feedback-icon').textContent = '✓';
+      document.getElementById('feedback-text').textContent = 'Правильно!';
+    } else {
+      prev.chosen.forEach(i => opts[i].classList.add('wrong'));
+      prev.correct.forEach(i => opts[i].classList.add('correct'));
+      const fb = document.getElementById('feedback');
+      fb.className = 'feedback wrong-fb show';
+      document.getElementById('feedback-icon').textContent = '✗';
+      document.getElementById('feedback-text').textContent = 'Правильные ответы: ' + prev.correct.map(i => q.opts[i]).join(', ');
+    }
+  } else {
+    // Для обычного выбора
+    if (prev.isCorrect) {
+      opts[prev.chosen].classList.add('correct');
+      const fb = document.getElementById('feedback');
+      fb.className = 'feedback correct-fb show';
+      document.getElementById('feedback-icon').textContent = '✓';
+      document.getElementById('feedback-text').textContent = 'Правильно!';
+    } else {
+      opts[prev.chosen].classList.add('wrong');
+      opts[prev.correct].classList.add('correct');
+      const fb = document.getElementById('feedback');
+      fb.className = 'feedback wrong-fb show';
+      document.getElementById('feedback-icon').textContent = '✗';
+      document.getElementById('feedback-text').textContent = 'Правильный ответ: ' + q.opts[prev.correct];
+    }
+  }
+  document.getElementById('btn-next').classList.add('show');
+}
 // Показываем нужную кнопку (добавьте этот код в конец renderQuestion)
 const submitBtn = document.getElementById('btn-submit-multi');
 const nextBtn = document.getElementById('btn-next');
@@ -625,8 +679,8 @@ function submitMulti() {
   
   const q = questions[current];
   const opts = document.querySelectorAll('.option');
-  const correctMulti = q.multi.sort();
-  const userMulti = selectedMulti.sort();
+  const correctMulti = [...q.multi].sort();
+  const userMulti = [...selectedMulti].sort();
   
   const isCorrect = JSON.stringify(correctMulti) === JSON.stringify(userMulti);
   
@@ -643,6 +697,15 @@ function submitMulti() {
   }
   
   answered = true;
+  
+  // СОХРАНЯЕМ ОТВЕТ ДЛЯ МУЛЬТИВЫБОРА
+  answeredQuestions[current] = { 
+    chosen: selectedMulti, 
+    correct: q.multi, 
+    isCorrect: isCorrect,
+    type: 'multi'
+  };
+  
   document.getElementById('score-label').textContent = `✓ ${score}`;
   
   // Скрыть кнопку подтверждения
@@ -652,6 +715,19 @@ function submitMulti() {
   const nextBtn = document.getElementById('btn-next');
   nextBtn.style.display = 'block';
   nextBtn.classList.add('show');
+  
+  // Сохраняем ответ пользователя для детальных результатов
+  userAnswers[current] = selectedMulti;
+  userAnswersDetails[current] = {
+    question: q.q,
+    userAnswer: selectedMulti.map(i => q.opts[i]).join(', '),
+    correctAnswer: q.multi.map(i => q.opts[i]).join(', '),
+    isCorrect: isCorrect,
+    type: 'multi'
+  };
+  
+  sessionStorage.setItem('userAnswers', JSON.stringify(userAnswersDetails));
+  saveQuiz(); // сохраняем прогресс
 }
 
 // Показ подсказки
@@ -683,6 +759,7 @@ function selectAnswer(chosen) {
   }
   
   answered = true;
+  answeredQuestions[current] = { chosen: chosen, correct: q.ans, isCorrect: isCorrect };
   document.getElementById('score-label').textContent = `✓ ${score}`;
   document.getElementById('btn-next').classList.add('show');
   saveQuiz();
@@ -694,6 +771,8 @@ function nextQuestion() {
     showResult();
   } else {
     document.getElementById('question-card').style.animation = 'none';
+    const navInput = document.getElementById('navInput');
+    if (navInput) navInput.value = current + 1;
     setTimeout(() => {
       document.getElementById('question-card').style.animation = '';
       renderQuestion();
@@ -706,32 +785,76 @@ function showResult() {
   document.getElementById('quiz-area').style.display = 'none';
   const result = document.getElementById('result-screen');
   result.className = 'result-screen show';
+  result.innerHTML = '';
 
   const pct = Math.round((score / questions.length) * 100);
-  document.getElementById('result-circle').style.setProperty('--pct', `${pct}%`);
-  document.getElementById('result-score').textContent = `${pct}%`;
-
+  
   let title, sub;
-  if (pct >= 90) { title = 'Отлично!'; sub = `Вы ответили правильно на ${score} из ${questions.length} вопросов.\nПревосходный результат!`; }
-  else if (pct >= 70) { title = 'Хорошо!'; sub = `Вы ответили правильно на ${score} из ${questions.length} вопросов.\nХороший результат, есть куда расти.`; }
-  else if (pct >= 50) { title = 'Удовлетворительно'; sub = `Вы ответили правильно на ${score} из ${questions.length} вопросов.\nСтоит повторить материал.`; }
-  else { title = 'Нужно подготовиться'; sub = `Вы ответили правильно на ${score} из ${questions.length} вопросов.\nРекомендуем изучить тему глубже.`; }
+  if (pct >= 90) { title = 'Отлично!'; sub = `Вы ответили правильно на ${score} из ${questions.length} вопросов. Превосходный результат!`; }
+  else if (pct >= 70) { title = 'Хорошо!'; sub = `Вы ответили правильно на ${score} из ${questions.length} вопросов. Хороший результат, есть куда расти.`; }
+  else if (pct >= 50) { title = 'Удовлетворительно'; sub = `Вы ответили правильно на ${score} из ${questions.length} вопросов. Стоит повторить материал.`; }
+  else { title = 'Нужно подготовиться'; sub = `Вы ответили правильно на ${score} из ${questions.length} вопросов. Рекомендуем изучить тему глубже.`; }
 
-  document.getElementById('result-title').textContent = title;
-  document.getElementById('result-sub').textContent = sub;
+  // Собираем детали из answeredQuestions
+  let detailsHTML = '';
+  const keys = Object.keys(answeredQuestions).map(Number).sort((a,b) => a-b);
+  
+  if (keys.length === 0) {
+    detailsHTML = '<p style="color: var(--muted); text-align: center; padding: 20px;">Нет сохраненных ответов.</p>';
+  } else {
+    for (const i of keys) {
+      const item = answeredQuestions[i];
+      const q = questions[i];
+      if (!item || !q) continue;
+      const statusColor = item.isCorrect ? 'var(--accent2)' : 'var(--wrong)';
+      const statusIcon = item.isCorrect ? '✅' : '❌';
+      const statusText = item.isCorrect ? 'Верно' : 'Неверно';
+      detailsHTML += `
+        <div style="margin-bottom: 15px; padding: 15px; background: var(--card); border-radius: 8px; border-left: 4px solid ${statusColor};">
+          <div style="margin-bottom: 8px;"><span style="font-weight: bold; color: ${statusColor};">Вопрос ${i+1} ${statusIcon} ${statusText}</span></div>
+          <div style="margin-bottom: 8px; font-size: 0.9rem;">${q.q}</div>
+          <div style="color: var(--muted);">Ваш ответ: <span style="color: ${statusColor}; font-weight: bold;">${q.opts[item.chosen]}</span></div>
+          ${!item.isCorrect ? `<div style="color: var(--accent2); margin-top: 5px;">✅ Правильный: ${q.opts[item.correct]}</div>` : ''}
+        </div>`;
+    }
+  }
+
+  // Собираем финальный HTML
+  result.innerHTML = `
+    <div class="result-circle" style="--pct: ${pct}%">
+      <div class="result-score">${pct}%</div>
+    </div>
+    <div class="result-title">${title}</div>
+    <div class="result-sub">${sub}</div>
+    
+    <div style="margin: 30px 0; text-align: left;">
+      <h3 style="font-family: 'Unbounded'; margin-bottom: 20px; color: var(--accent2);">📋 Детальные результаты:</h3>
+      <div style="max-height: 500px; overflow-y: auto; padding: 15px; background: var(--surface); border-radius: 10px; border: 1px solid var(--border);">
+        ${detailsHTML}
+      </div>
+    </div>
+    
+    <button class="btn-restart" onclick="restartQuiz()">↺ Пройти заново</button>
+  `;
 }
 
 function restartQuiz() {
-  localStorage.removeItem('quiz');
-  current = 0; score = 0;
+  sessionStorage.removeItem('quizProgress');
+  current = 0; score = 0; answered = false; answeredQuestions = {};
   document.getElementById('result-screen').className = 'result-screen';
   document.getElementById('quiz-area').style.display = 'block';
-  const btnNext = document.getElementById('btn-next');
-  btnNext.textContent = 'Следующий вопрос →';
+  document.getElementById('btn-next').textContent = 'Следующий вопрос →';
+  const navEl = document.getElementById('navInput');
+  if (navEl) navEl.value = 1;
   renderQuestion();
 }
 
 renderQuestion();
+// Обновить счётчик после полной загрузки DOM (навигатор рендерится после скрипта)
+document.addEventListener('DOMContentLoaded', function() {
+  const navEl = document.getElementById('navInput');
+  if (navEl) navEl.value = current + 1;
+});
 </script>
 <!-- Блок навигации для перехода к любому вопросу -->
 <div style="position: fixed; top: 10px; right: 10px; z-index: 1000; background: var(--card); border: 1px solid var(--border); border-radius: 50px; padding: 8px 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: flex; gap: 10px; align-items: center; backdrop-filter: blur(5px);">
@@ -765,25 +888,9 @@ renderQuestion();
 let targetQuestion = 0;
 
 function goToQuestion(index) {
-  const totalQuestions = questions.length;
-  
-  // Проверка границ
   if (index < 0) index = 0;
-  if (index >= totalQuestions) index = totalQuestions - 1;
-  
-  // Если это вызов с кнопки навигации (не из модального окна)
-  if (arguments.length === 1) {
-    // Если вопрос уже отвечен и не последний, показываем предупреждение
-    if (answered && index !== current) {
-      targetQuestion = index;
-      document.getElementById('modalQuestionNum').textContent = index + 1;
-      document.getElementById('navModal').style.display = 'flex';
-      return;
-    }
-    
-    // Просто переходим
-    performNavigation(index);
-  }
+  if (index >= questions.length) index = questions.length - 1;
+  performNavigation(index);
 }
 
 function performNavigation(index) {
@@ -913,3 +1020,5 @@ document.addEventListener('keydown', function(e) {
 </style>
 </body>
 </html>
+
+
